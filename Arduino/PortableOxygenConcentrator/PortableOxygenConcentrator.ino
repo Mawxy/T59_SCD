@@ -73,7 +73,7 @@ void sensorLoop()
 
     Serial.print(loopT);
     Serial.print(",");
-    
+
     if (!isnan(inletT) || !isnan(inletH)) {  // check if 'is not a number'
       Serial.print(inletT); Serial.print(","); Serial.print(inletH);Serial.print(",");
     } else { 
@@ -95,7 +95,8 @@ void sensorLoop()
 
 void loop() 
 {
-  // put your main code here, to run repeatedly:
+  //delay that runs to make sure everything is in "default" state off the start
+  //additionally this prints the headers for the csv
   if(loopT == 0)
   {
     delay(10000);
@@ -103,16 +104,16 @@ void loop()
   }
 
   
-  digitalWrite(threeWay_column1,  LOW); //needs to be low
-  digitalWrite(threeWay_inlet,   LOW); 
+  digitalWrite(threeWay_column1,  LOW); 
+  digitalWrite(threeWay_inlet,   HIGH); 
   digitalWrite(threeWay_column2,  LOW);
-  digitalWrite(twoWay_column1,   LOW); //closed
-  digitalWrite(twoWay_column2,    HIGH); //open
+  digitalWrite(twoWay_column1,   LOW); 
+  digitalWrite(twoWay_column2,    HIGH); 
   
   sensorLoop();
   
   digitalWrite(threeWay_column1,  HIGH);
-  digitalWrite(threeWay_inlet,    HIGH);
+  digitalWrite(threeWay_inlet,    LOW);
   digitalWrite(threeWay_column2, HIGH);
   digitalWrite(twoWay_column1,    HIGH);
   digitalWrite(twoWay_column2,   LOW);
