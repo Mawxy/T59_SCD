@@ -2,22 +2,26 @@
 #include "Adafruit_MAX31855.h"
 #include <Arduino.h>
 #include "Adafruit_SHT31.h"
+#include <HoneywellZephyrI2C.h>  //NEEDS TO BE DOWNLOADED FROM LIBRARY idk why it is in <>
 
-#define threeWay_column1 2 
-#define threeWay_inlet   3 
-#define threeWay_column2 4 
-#define twoWay_column1   5 
-#define twoWay_column2   6 
-#define inletHumidityAddr 0x45
+#define threeWay_column1      2 
+#define threeWay_inlet        3 
+#define threeWay_column2      4 
+#define twoWay_column1        5 
+#define twoWay_column2        6 
+#define inletHumidityAddr  0x45
 #define outletHumidityAddr 0x44
-#define columnUptime 10 //(in seconds)
+#define inletFlowAddr      0x49
+#define columnUptime         10 //(in seconds)
 
 
 Adafruit_SHT31 inletHumidity = Adafruit_SHT31();
 Adafruit_SHT31 outletHumidity = Adafruit_SHT31();
+ZephyrFlowRateSensor inletFlow(inletFlowAddr, 100, ZephyrFlowRateSensor::SLPM);
 
 bool inletHumidityEnabled = true;
 bool outletHumidityEnabled = true;
+bool inletFlowEnabled = true;
 int loopT = 0;
 
 
@@ -30,17 +34,18 @@ void setup()
 
   if( !inletHumidity.begin(inletHumidityAddr))
   {
-    Serial.println("Continuing without silica inlet humidity and temperature sensor");
+    Serial.println("Continuing without inlet humidity and temperature sensor");
     inletHumidityEnabled = false;
     
   }
   
   if (!outletHumidity.begin(outletHumidityAddr))
   {
-    Serial.println("Continuing without silica outlet humidity and temperature sensor");
+    Serial.println("Continuing without outlet humidity and temperature sensor");
     outletHumidityEnabled = false;
   }
 
+  inletFlow.begin();
   
   pinMode(threeWay_column1, OUTPUT);
   pinMode(threeWay_inlet,   OUTPUT);
@@ -56,6 +61,7 @@ void sensorLoop()
   float inletH = -1;
   float outletT = -1;
   float outletH = -1;
+  float inletF = -1;
   
   for(int i = 0; i < columnUptime; i++)
   {
@@ -71,6 +77,12 @@ void sensorLoop()
       outletH = outletHumidity.readHumidity();
     }
 
+    if(inletFlowEnabled)
+    {
+      inletFlow.readSensor();
+      inletF = inletFlow.flow();
+    }
+
     Serial.print(loopT);
     Serial.print(",");
 
@@ -81,12 +93,20 @@ void sensorLoop()
     }
 
     if (!isnan(outletT) || !isnan(outletH)) {  // check if 'is not a number'
-      Serial.print(outletT); Serial.print(","); Serial.print(outletH);
+      Serial.print(outletT); Serial.print(","); Serial.print(outletH); Serial.print(",");
     } else { 
-      Serial.print("-1"); Serial.print(","); Serial.print("-1");
+      Serial.print("-1"); Serial.print(","); Serial.print("-1"); Serial.print(",");
     }
 
-    Serial.println("");
+    if (!isnan(inletF))
+    {
+      Serial.print(inletF);
+    } else {
+      Serial.print("-1");
+    }
+    
+    Serial.println();
+   
     loopT = loopT + 1;
     delay(1000);
   }
