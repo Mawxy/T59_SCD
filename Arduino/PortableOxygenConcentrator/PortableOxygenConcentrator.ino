@@ -120,20 +120,26 @@ void loop()
   if(loopT == 0)
   {
     delay(10000);
-    Serial.println("Time,inletT,inletH,outletT,outletH");
+    Serial.println("Time,inletT,inletH,outletT,outletH,inletF");
   }
 
   
-  digitalWrite(threeWay_column1,  LOW); 
   digitalWrite(threeWay_inlet,   HIGH); 
+
+  delay(5000);
+  
+  digitalWrite(threeWay_column1,  LOW); 
   digitalWrite(threeWay_column2,  LOW);
   digitalWrite(twoWay_column1,   LOW); 
   digitalWrite(twoWay_column2,    HIGH); 
   
   sensorLoop();
-  
-  digitalWrite(threeWay_column1,  HIGH);
+
   digitalWrite(threeWay_inlet,    LOW);
+
+  delay(5000);
+    
+  digitalWrite(threeWay_column1,  HIGH);
   digitalWrite(threeWay_column2, HIGH);
   digitalWrite(twoWay_column1,    HIGH);
   digitalWrite(twoWay_column2,   LOW);
