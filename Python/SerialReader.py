@@ -9,7 +9,7 @@ baud = 9600
 fileName = dirPath + timeStr + "_TestBenchData.csv"
 # print(fileName)
 
-samples = 121
+samples = 30
 line = 0
 
 ser = serial.Serial(arduinoPort, baud)
