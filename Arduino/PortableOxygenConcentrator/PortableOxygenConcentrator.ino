@@ -20,12 +20,12 @@
 #define outletHumidityAddr 0x44
 #define dacAddr            0x48
 #define inletFlowAddr      0x49
-#define columnUptime         10 //(in seconds)
+#define columnUptime         70 //(in seconds)
 
 Adafruit_SHT31 inletHumidity = Adafruit_SHT31();
 Adafruit_SHT31 outletHumidity = Adafruit_SHT31();
-Adafruit_MAX31855 thermoColumn1(thermo_do_column1, thermo_cs_column1, thermo_clk_column1);
-Adafruit_MAX31855 thermoColumn2(thermo_do_column2, thermo_cs_column2, thermo_clk_column2);
+Adafruit_MAX31855 thermoColumn1(thermo_clk_column1, thermo_cs_column1, thermo_do_column1);
+Adafruit_MAX31855 thermoColumn2(thermo_clk_column2, thermo_cs_column2, thermo_do_column2);
 ZephyrFlowRateSensor inletFlow(inletFlowAddr, 100, ZephyrFlowRateSensor::SLPM);
 Adafruit_ADS1115 dac;
 
@@ -36,22 +36,21 @@ bool thermoColumn1Enabled = true;
 bool thermoColumn2Enabled = true;
 bool dacEnabled = true;
 int loopT = 0;
-int initialmV1;
-int initialmV2;
-int initialmV3;
-int initialmV4;
+float initialmV1;
+float initialmV2;
+float initialmV3;
+float initialmV4;
 
 
 void setup() 
 {
   Serial.begin(9600);
+  delay(1000);
 
-  Serial.println("here");
 
   while(!Serial)
     delay(10);
 
-  Serial.println("now here");
   //let sensors stabilize
 //  delay(1000);
 
@@ -63,7 +62,7 @@ void setup()
     inletHumidityEnabled = false;
     
   }
-    Serial.println("Should hit");
+//    Serial.println("Should hit");
   //Start outlet humidity sensor
   if (!outletHumidity.begin(outletHumidityAddr))
   {
@@ -73,12 +72,9 @@ void setup()
 
   
   //start Flow Sensor
-//  inletFlow.begin();
-//
-//  Serial.println("Now here");
+  inletFlow.begin();
+  
   //start thermocouple for column 1
-
-  Serial.println("Here");
   if(!thermoColumn1.begin())
   {
     Serial.println("Continuing without column 1 thermocouple");
@@ -106,8 +102,6 @@ void setup()
     dac.setGain(GAIN_ONE);
     calibratePressure();
   }
-
-  Serial.println("HERE");
 
   //Set relay pins all to oupout
   pinMode(threeWay_column1, OUTPUT);
@@ -163,6 +157,7 @@ void sensorLoop()
     //reads in Celsius
     if(thermoColumn1Enabled)
     {
+      thermoColumn1.readInternal();
       column1T = thermoColumn1.readCelsius();
     }
 
@@ -173,7 +168,7 @@ void sensorLoop()
     }
 
     //Reads DAC and caluclates psis
-    if(dacEnabled)
+    if(dacEnabled && i % 2 == 0)
     {
       dacDecimalCount = dac.readADC_SingleEnded(0);
       psi1 = calculatePressure(dacDecimalCount, initialmV1);
@@ -186,65 +181,64 @@ void sensorLoop()
 //
 //      dacDecimalCount = dac.readADC_SingleEnded(3);
 //      psi4 = calculatePressure(dacDecimalCount, initialmV4);
-      
+//      
     }
 
 
-//    //Following is all to print to CSV
-//    //basically prints -1 for values if it is NAN which would indicate a sensor not working
-//    Serial.print(loopT);
-//    Serial.print(",");
-//
-//    if (!isnan(inletT) || !isnan(inletH)) {  // check if 'is not a number'
-//      Serial.print(inletT); Serial.print(","); Serial.print(inletH);Serial.print(",");
-//    } else { 
-//      Serial.print("-1"); Serial.print(","); Serial.print("-1"); Serial.print(",");
-//    }
-//
-//    if (!isnan(outletT) || !isnan(outletH)) {  // check if 'is not a number'
-//      Serial.print(outletT); Serial.print(","); Serial.print(outletH); Serial.print(",");
-//    } else { 
-//      Serial.print("-1"); Serial.print(","); Serial.print("-1"); Serial.print(",");
-//    }
-//
-//    if (!isnan(inletF))
-//    {
-//      Serial.print(inletF); Serial.print(",");
-//    } else {
-//      Serial.print("-1"); Serial.print(",");
-//    }
-//
-//    
-//    if (!isnan(column1T))
-//    {
-//      Serial.print(column1T); Serial.print(",");
-//    } else {
-//      Serial.print("-1"); Serial.print(",");
-//    }
-//
-//    
-//    if (!isnan(column2T))
-//    {
-//      Serial.print(column2T); Serial.print(",");
-//    } else {
-//      Serial.print("-1"); Serial.print(",");
-//    }
-//
-//    if (!isnan(psi1))
-//    {
-//      Serial.print(psi1); Serial.print(","); Serial.print(psi2);
-//      Serial.print(","); Serial.print(psi3); Serial.print(",");
-//      Serial.print(psi4);
-//    } 
-//    else 
-//    {
-//      Serial.print("-1"); Serial.print(","); Serial.print("-1");
-//      Serial.print(","); Serial.print("-1"); Serial.print(",");
-//      Serial.print("-1");
-//    }
-//    
-//    Serial.println();
-//   
+    //Following is all to print to CSV
+    //basically prints -1 for values if it is NAN which would indicate a sensor not working
+    Serial.print(loopT);
+    Serial.print(",");
+
+    if (!isnan(inletT) || !isnan(inletH)) {  // check if 'is not a number'
+      Serial.print(inletT); Serial.print(","); Serial.print(inletH);Serial.print(",");
+    } else { 
+      Serial.print("-1"); Serial.print(","); Serial.print("-1"); Serial.print(",");
+    }
+
+    if (!isnan(outletT) || !isnan(outletH)) {  // check if 'is not a number'
+      Serial.print(outletT); Serial.print(","); Serial.print(outletH); Serial.print(",");
+    } else { 
+      Serial.print("-1"); Serial.print(","); Serial.print("-1"); Serial.print(",");
+    }
+
+    if (!isnan(inletF))
+    {
+      Serial.print(inletF); Serial.print(",");
+    } else {
+      Serial.print("-1"); Serial.print(",");
+    }
+    
+    if (!isnan(column1T))
+    {
+      Serial.print(column1T); Serial.print(",");
+    } else {
+      Serial.print("-1"); Serial.print(",");
+    }
+
+    
+    if (!isnan(column2T))
+    {
+      Serial.print(column2T); Serial.print(",");
+    } else {
+      Serial.print("-1"); Serial.print(",");
+    }
+
+    if (!isnan(psi1))
+    {
+      Serial.print(psi1); Serial.print(","); Serial.print(psi2);
+      Serial.print(","); Serial.print(psi3); Serial.print(",");
+      Serial.print(psi4);
+    } 
+    else 
+    {
+      Serial.print("-1"); Serial.print(","); Serial.print("-1");
+      Serial.print(","); Serial.print("-1"); Serial.print(",");
+      Serial.print("-1");
+    }    
+    
+    Serial.println();
+   
     loopT = loopT + 1;
     delay(1000);
   }
@@ -262,12 +256,10 @@ void calibratePressure()
   int initialPDC3 = dac.readADC_SingleEnded(2);
   int initialPDC4 = dac.readADC_SingleEnded(3);
 
-  initialmV1 = initialPDC1 * 0.125;
-  Serial.println("**INITIAL MV**");
-  Serial.println(initialmV1);
-  initialmV2 = initialPDC2 * 0.125;
-  initialmV3 = initialPDC3 * 0.125;
-  initialmV4 = initialPDC4 * 0.125;
+  initialmV1 = initialPDC1 * 0.125 - 10;
+  initialmV2 = initialPDC2 * 0.125 - 10;
+  initialmV3 = initialPDC3 * 0.125 - 10;
+  initialmV4 = initialPDC4 * 0.125 - 10;
 }
 
 //0-100mV output for sensors
@@ -283,12 +275,12 @@ float calculatePressure(float decimalCount, float initialmV)
 {
   float psi, mvTotal, ratio, mvTrue;
   mvTotal = decimalCount * 0.125;
-  Serial.println("**mvTotal**");
-  Serial.println(mvTotal);
+//  Serial.println("**mvTotal**");
+//  Serial.println(mvTotal);
   mvTrue = mvTotal - initialmV;
 
-  Serial.println("**mvTrue**");
-  Serial.println(mvTrue);
+//  Serial.println("**mvTrue**");
+//  Serial.println(mvTrue);
   ratio = mvTrue / 100;
   psi = ratio * 250;
  
