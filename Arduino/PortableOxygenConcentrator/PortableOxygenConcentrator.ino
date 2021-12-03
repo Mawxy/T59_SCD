@@ -20,7 +20,7 @@
 #define outletHumidityAddr 0x44
 #define dacAddr            0x48
 #define inletFlowAddr      0x49
-#define columnUptime         70 //(in seconds)
+#define columnUptime         10 //(in seconds)
 
 Adafruit_SHT31 inletHumidity = Adafruit_SHT31();
 Adafruit_SHT31 outletHumidity = Adafruit_SHT31();
@@ -31,7 +31,7 @@ Adafruit_ADS1115 dac;
 
 bool inletHumidityEnabled = true;
 bool outletHumidityEnabled = true;
-bool inletFlowEnabled = true;
+bool inletFlowEnabled = true; 
 bool thermoColumn1Enabled = true;
 bool thermoColumn2Enabled = true;
 bool dacEnabled = true;
